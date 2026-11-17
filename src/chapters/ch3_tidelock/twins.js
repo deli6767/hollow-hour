@@ -2,7 +2,7 @@
    Behind the Twin Sluices door in The Weir Stairs (weir x29 rows 5-6 -> 'sluices'). OPTIONAL (not on any ending's critical path).
    Gimmick: two bodies, ONE hinge. They take turns: each round you face whichever twin's TURN it is (STRIKE/CHAT hit that twin),
    then that twin attacks and the turn passes to the other. Each twin has its own HP + calm. Every 3rd round they share the hinge (joint attack).
-   SPARE: both twins must be spareable (calm 100 or HP <= 25%). Releasing early only gets a polite refusal.
+   SPARE: both twins must be spareable (calm 100, or HP <= 25% after you have ACTed with that twin). Releasing early only gets a polite refusal.
    KILL ONE: the survivor changes ("alone" form): new track, new attack, new ACTs, calm resets. Spare the survivor -> bilge_half; kill -> killed_bilgewater.
    Flags: bilgewater_done, spared_bilgewater | killed_bilgewater, bilge_half, bilge_result ('spared'|'half'|'killed'). */
 for (const y of [5, 6]) ROOMS.weir.map[y] = ROOMS.weir.map[y].slice(0, 29) + '.';
@@ -112,13 +112,13 @@ const LONE_E = i => Object.assign({}, BILGE_BASE, { id: 'bilgewater', name: TWIN
   },
   spare: `${TWIN_E[i].name} props both doors open with the two buckets and walks off toward the basin, keeping one hand on the wall.`,
   kill: 'The hinge creaks once and goes still. Water fills the bilge, slowly, and nobody bails it.' });
-const twinsOK = tw => [0, 1].every(i => tw.dead === i || tw.calm[i] >= 100 || tw.hp[i] <= tw.max * 0.25);
+const twinsOK = tw => [0, 1].every(i => tw.dead === i || tw.calm[i] >= 100 || ((tw.talked && tw.talked[i]) && tw.hp[i] <= tw.max * 0.25));
 function twinLoop(b) { (async () => { try { await enemyTurn(b); } catch (e) { console.error(e); }
   while (alive(b)) { try { const res = await playerTurn(b); if (!alive(b) || res === 'end') return; await enemyTurn(b); } catch (err) { console.error(err); if (!alive(b)) return; b.list = null; b.typer = null; } } })(); }
-const twinSet = (b, i) => { const tw = b.tw; tw.cur = i; b.e = tw.dead >= 0 ? tw.lone : TWIN_E[i]; b.hp = b.shownHp = tw.hp[i]; b.calm = tw.calm[i]; };
-const twinStore = b => { const tw = b.tw; tw.hp[tw.cur] = b.hp; tw.calm[tw.cur] = b.calm; };
+const twinSet = (b, i) => { const tw = b.tw; tw.cur = i; b.e = tw.dead >= 0 ? tw.lone : TWIN_E[i]; b.hp = b.shownHp = tw.hp[i]; b.calm = tw.calm[i]; b.talked = !!(tw.talked && tw.talked[i]); };
+const twinStore = b => { const tw = b.tw; tw.hp[tw.cur] = b.hp; tw.calm[tw.cur] = b.calm; if (!tw.talked) tw.talked = [false, false]; tw.talked[tw.cur] = !!b.talked; };
 { const _sb = startBattle; startBattle = function (id, opts = {}) { const r = _sb.apply(this, arguments);
-    if (id === 'bilgewater' && B && !opts.practice) B.tw = { cur: 0, hp: [70, 70], calm: [0, 0], max: 70, dead: -1, round: 0, lone: null };
+    if (id === 'bilgewater' && B && !opts.practice) B.tw = { cur: 0, hp: [70, 70], calm: [0, 0], max: 70, dead: -1, round: 0, lone: null, talked: [false, false] };
     return r; }; }
 { const _et = enemyTurn; enemyTurn = async function (b) {
     if (!b || !b.tw || !alive(b)) return _et.apply(this, arguments);

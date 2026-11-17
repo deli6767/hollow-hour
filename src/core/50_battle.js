@@ -25,7 +25,7 @@ let B = null;
 function startBattle(id, opts = {}) {
   const e = ENEMIES[id];
   resetTouch(); clearBullets(false); particles.length = 0; floaters.length = 0;
-  B = { e, id, hp: e.hp, maxhp: e.hp, calm: 0, st: 'trans', transT: 0, turn: 0, counts: {}, sel: 0, sub: 0, list: null, typer: null, lines: [], bubble: null, bubbleT: 0, runner: null,
+  B = { e, id, hp: e.hp, maxhp: e.hp, calm: 0, talked: false, st: 'trans', transT: 0, turn: 0, counts: {}, sel: 0, sub: 0, list: null, typer: null, lines: [], bubble: null, bubbleT: 0, runner: null,
     resolve: null, opts, alpha: 1, hurt: 0, shownHp: e.hp, hpBarT: 0, aim: 0, aimDir: 1, slashT: 0, t: 0, flipped: false, forceAtk: null, pendingSay: null, dead: false, bannerT: 0, banner: '', flash: 0, glowFlash: 0, token: {} ,
     n(k) { return this.counts[k] || 0; },
     mer: e.meridian ? { idx: 0, phase: -1, cracks: 0, eye: '#fff', dead: 0, raise: 0, spent: false, final: false } : null };
@@ -49,7 +49,7 @@ async function bDodge(b, def, d) {
   if (b.tfx) endTfx(b, true); REC.on = false; player.slip = false; b.runner = null; clearBullets(true); setBlue(false); arena.av = 0; if (arena.rot) arena.rotHome = true; setArena(...TBOX);
 }
 function flavor(b) { if (b.mer && b.mer.spent) return 'MERIDIAN can barely stand. His spring is spent. The bell waits.'; return spareable(b) ? b.e.calm : pick(b.e.flavor); }
-const spareable = b => b.mer ? b.mer.spent : (b.calm >= 100 || b.hp <= b.maxhp * 0.25);
+const spareable = b => b.mer ? b.mer.spent : (b.calm >= 100 || (b.talked && b.hp <= b.maxhp * 0.25));
 async function battleLoop(b) {
   await sleep(10);
   b.st = 'trans'; await bWait(b, 'trans');
@@ -82,7 +82,7 @@ async function playerTurn(b) {
     if (cmd === 1) { const name = opts[pickI];
       if (name === 'Check') { await bMsg(b, `${b.e.name}${b.e.title ? ', ' + b.e.title : ''} · ${b.e.check}`); return; }
       const r = b.e.acts[name](b); b.counts[name] = (b.counts[name] || 0) + 1;
-      const was = spareable(b); b.calm = clamp(b.calm + r.c, 0, 100); if (r.say) b.pendingSay = r.say;
+      const was = spareable(b); b.talked = true; b.calm = clamp(b.calm + r.c, 0, 100); if (r.say) b.pendingSay = r.say;
       if (r.c > 0) burst(EX, EY + 20, 10, '#ffd36e', 120, 0.6, 3); if (r.c < 0) shake(4, 0.2);
       await bMsg(b, r.t); if (!was && spareable(b) && !b.mer) { sfx('spare'); await bMsg(b, `${b.e.name} seems calm now. You could RELEASE them.`); }
       return;
@@ -91,7 +91,7 @@ async function playerTurn(b) {
     if (cmd === 3) {
       if (pickI === 0) {
         if (spareable(b)) { await doSpare(b); return 'end'; }
-        await bMsg(b, b.mer ? 'MERIDIAN laughs. "let go? i\'m not done yet, spark."' : `${b.e.name} isn't calm enough to let go yet.`); return;
+        await bMsg(b, b.mer ? 'MERIDIAN laughs. "let go? i\'m not done yet, spark."' : (!b.talked ? `${b.e.name} won't listen until you've talked to it.` : `${b.e.name} isn't calm enough to let go yet.`)); return;
       }
       if (b.id === 'mopsley') { sfx('flee'); hero.flags.mop_fight = 'slip'; giveKey('button');
         await bMsg(b, ['You try to slip away...', '...and you DO slip. On the wet floor. You skid right out of the fight on your back.', 'Mopsley laughs so hard he has to sit down on his bucket.', '"Oh, that\'s the one. That\'s the one I was waiting for." He tosses you a brass button. "Here. For the trouble."', '(You got the Brass Button.)']);

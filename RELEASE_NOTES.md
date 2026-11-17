@@ -1,4 +1,9 @@
 # Release notes
+**Hollow Hour v2.0.1: talk before you can spare**
+- You have to CHAT with an enemy at least once (any option except Check) before RELEASE will let them go. Wearing them down to low HP still works as a mercy path, but only after you have talked. MERIDIAN is unchanged: he still only yields when his spring is spent.
+- Tolly's advice in Bellfall mentions the new rule.
+
+**Hollow Hour v2.0: the full clock**
 **Hollow Hour v2.0: the full clock**
 - 7 endings in all (including the secret THE 12:01), each reachable on its own route; new: THE UNDERSTUDY and the Platform 13 epilogue.
 - MERIDIAN now remembers your run: phase intros and callbacks react to who you spared, the tide, the archive, and more.

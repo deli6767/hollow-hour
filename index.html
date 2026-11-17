@@ -66,7 +66,7 @@ button:active{transform:scale(.96);background:#2a1c40}
     <div class="row"><button id="b-play">PLAY · FILES</button></div>
     <div class="row"><button data-go="rush">BOSS RUSH</button><button data-go="practice">PRACTICE</button><button data-go="records">RECORDS</button><button data-go="credits">CREDITS</button><button data-go="settings">SETTINGS</button></div>
     <div class="sub" id="title-hint"></div>
-    <div class="sub" style="opacity:.55">v2.0</div>
+    <div class="sub" style="opacity:.55">v2.0.1</div>
   </div>
   <div class="screen" id="s-files"><h2>FILES</h2><div id="files-list"></div><button data-go="title" data-back>BACK</button></div>
   <div class="screen" id="s-name"><h2>NAME THE FALLEN SPARK</h2><div class="sub">(max 8 letters)</div>
@@ -1594,7 +1594,7 @@ Object.assign(ROOMS, {
           await say('TOLLY', 'Oh! Oh my. You fell right out of the Bell of Hours, didn\'t you?', 'I heard it. A little "ding". First new sound in forty years.',
             'I\'m Tolly. I\'ve been walking to the bakery since 11:59. Almost there. Any decade now.',
             'Listen, little chime. Folk out here are stuck. Same minute, over and over. It makes them... prickly.',
-            'If one jumps out at you, you can STRIKE them... or CHAT with them. Calm them enough and you can RELEASE them. Let them go home.',
+            'If one jumps out at you, you can STRIKE them... or CHAT with them. You have to talk first. Then calm them enough, or wear them down after you\'ve talked, and you can RELEASE them. Let them go home.',
             'And when things get dangerous, your spark curls up into its core. Dodge, dodge, dodge!',
             'That little bell on the post? Ring it. It keeps the moment safe. Very handy, being kept.',
             'The jester lives up in the Belfry, past town. If anyone can get midnight moving again... it might be a fresh chime like you.');
@@ -2327,7 +2327,7 @@ let B = null;
 function startBattle(id, opts = {}) {
   const e = ENEMIES[id];
   resetTouch(); clearBullets(false); particles.length = 0; floaters.length = 0;
-  B = { e, id, hp: e.hp, maxhp: e.hp, calm: 0, st: 'trans', transT: 0, turn: 0, counts: {}, sel: 0, sub: 0, list: null, typer: null, lines: [], bubble: null, bubbleT: 0, runner: null,
+  B = { e, id, hp: e.hp, maxhp: e.hp, calm: 0, talked: false, st: 'trans', transT: 0, turn: 0, counts: {}, sel: 0, sub: 0, list: null, typer: null, lines: [], bubble: null, bubbleT: 0, runner: null,
     resolve: null, opts, alpha: 1, hurt: 0, shownHp: e.hp, hpBarT: 0, aim: 0, aimDir: 1, slashT: 0, t: 0, flipped: false, forceAtk: null, pendingSay: null, dead: false, bannerT: 0, banner: '', flash: 0, glowFlash: 0, token: {} ,
     n(k) { return this.counts[k] || 0; },
     mer: e.meridian ? { idx: 0, phase: -1, cracks: 0, eye: '#fff', dead: 0, raise: 0, spent: false, final: false } : null };
@@ -2351,7 +2351,7 @@ async function bDodge(b, def, d) {
   if (b.tfx) endTfx(b, true); REC.on = false; player.slip = false; b.runner = null; clearBullets(true); setBlue(false); arena.av = 0; if (arena.rot) arena.rotHome = true; setArena(...TBOX);
 }
 function flavor(b) { if (b.mer && b.mer.spent) return 'MERIDIAN can barely stand. His spring is spent. The bell waits.'; return spareable(b) ? b.e.calm : pick(b.e.flavor); }
-const spareable = b => b.mer ? b.mer.spent : (b.calm >= 100 || b.hp <= b.maxhp * 0.25);
+const spareable = b => b.mer ? b.mer.spent : (b.calm >= 100 || (b.talked && b.hp <= b.maxhp * 0.25));
 async function battleLoop(b) {
   await sleep(10);
   b.st = 'trans'; await bWait(b, 'trans');
@@ -2384,7 +2384,7 @@ async function playerTurn(b) {
     if (cmd === 1) { const name = opts[pickI];
       if (name === 'Check') { await bMsg(b, `${b.e.name}${b.e.title ? ', ' + b.e.title : ''} · ${b.e.check}`); return; }
       const r = b.e.acts[name](b); b.counts[name] = (b.counts[name] || 0) + 1;
-      const was = spareable(b); b.calm = clamp(b.calm + r.c, 0, 100); if (r.say) b.pendingSay = r.say;
+      const was = spareable(b); b.talked = true; b.calm = clamp(b.calm + r.c, 0, 100); if (r.say) b.pendingSay = r.say;
       if (r.c > 0) burst(EX, EY + 20, 10, '#ffd36e', 120, 0.6, 3); if (r.c < 0) shake(4, 0.2);
       await bMsg(b, r.t); if (!was && spareable(b) && !b.mer) { sfx('spare'); await bMsg(b, `${b.e.name} seems calm now. You could RELEASE them.`); }
       return;
@@ -2393,7 +2393,7 @@ async function playerTurn(b) {
     if (cmd === 3) {
       if (pickI === 0) {
         if (spareable(b)) { await doSpare(b); return 'end'; }
-        await bMsg(b, b.mer ? 'MERIDIAN laughs. "let go? i\'m not done yet, spark."' : `${b.e.name} isn't calm enough to let go yet.`); return;
+        await bMsg(b, b.mer ? 'MERIDIAN laughs. "let go? i\'m not done yet, spark."' : (!b.talked ? `${b.e.name} won't listen until you've talked to it.` : `${b.e.name} isn't calm enough to let go yet.`)); return;
       }
       if (b.id === 'mopsley') { sfx('flee'); hero.flags.mop_fight = 'slip'; giveKey('button');
         await bMsg(b, ['You try to slip away...', '...and you DO slip. On the wet floor. You skid right out of the fight on your back.', 'Mopsley laughs so hard he has to sit down on his bucket.', '"Oh, that\'s the one. That\'s the one I was waiting for." He tosses you a brass button. "Here. For the trouble."', '(You got the Brass Button.)']);
@@ -4346,7 +4346,7 @@ ART.gullbell = (x, y, t, s) => { const f = Math.sin(t * 6) * 10; ell(x, y + 24, 
    Behind the Twin Sluices door in The Weir Stairs (weir x29 rows 5-6 -> 'sluices'). OPTIONAL (not on any ending's critical path).
    Gimmick: two bodies, ONE hinge. They take turns: each round you face whichever twin's TURN it is (STRIKE/CHAT hit that twin),
    then that twin attacks and the turn passes to the other. Each twin has its own HP + calm. Every 3rd round they share the hinge (joint attack).
-   SPARE: both twins must be spareable (calm 100 or HP <= 25%). Releasing early only gets a polite refusal.
+   SPARE: both twins must be spareable (calm 100, or HP <= 25% after you have ACTed with that twin). Releasing early only gets a polite refusal.
    KILL ONE: the survivor changes ("alone" form): new track, new attack, new ACTs, calm resets. Spare the survivor -> bilge_half; kill -> killed_bilgewater.
    Flags: bilgewater_done, spared_bilgewater | killed_bilgewater, bilge_half, bilge_result ('spared'|'half'|'killed'). */
 for (const y of [5, 6]) ROOMS.weir.map[y] = ROOMS.weir.map[y].slice(0, 29) + '.';
@@ -4456,13 +4456,13 @@ const LONE_E = i => Object.assign({}, BILGE_BASE, { id: 'bilgewater', name: TWIN
   },
   spare: `${TWIN_E[i].name} props both doors open with the two buckets and walks off toward the basin, keeping one hand on the wall.`,
   kill: 'The hinge creaks once and goes still. Water fills the bilge, slowly, and nobody bails it.' });
-const twinsOK = tw => [0, 1].every(i => tw.dead === i || tw.calm[i] >= 100 || tw.hp[i] <= tw.max * 0.25);
+const twinsOK = tw => [0, 1].every(i => tw.dead === i || tw.calm[i] >= 100 || ((tw.talked && tw.talked[i]) && tw.hp[i] <= tw.max * 0.25));
 function twinLoop(b) { (async () => { try { await enemyTurn(b); } catch (e) { console.error(e); }
   while (alive(b)) { try { const res = await playerTurn(b); if (!alive(b) || res === 'end') return; await enemyTurn(b); } catch (err) { console.error(err); if (!alive(b)) return; b.list = null; b.typer = null; } } })(); }
-const twinSet = (b, i) => { const tw = b.tw; tw.cur = i; b.e = tw.dead >= 0 ? tw.lone : TWIN_E[i]; b.hp = b.shownHp = tw.hp[i]; b.calm = tw.calm[i]; };
-const twinStore = b => { const tw = b.tw; tw.hp[tw.cur] = b.hp; tw.calm[tw.cur] = b.calm; };
+const twinSet = (b, i) => { const tw = b.tw; tw.cur = i; b.e = tw.dead >= 0 ? tw.lone : TWIN_E[i]; b.hp = b.shownHp = tw.hp[i]; b.calm = tw.calm[i]; b.talked = !!(tw.talked && tw.talked[i]); };
+const twinStore = b => { const tw = b.tw; tw.hp[tw.cur] = b.hp; tw.calm[tw.cur] = b.calm; if (!tw.talked) tw.talked = [false, false]; tw.talked[tw.cur] = !!b.talked; };
 { const _sb = startBattle; startBattle = function (id, opts = {}) { const r = _sb.apply(this, arguments);
-    if (id === 'bilgewater' && B && !opts.practice) B.tw = { cur: 0, hp: [70, 70], calm: [0, 0], max: 70, dead: -1, round: 0, lone: null };
+    if (id === 'bilgewater' && B && !opts.practice) B.tw = { cur: 0, hp: [70, 70], calm: [0, 0], max: 70, dead: -1, round: 0, lone: null, talked: [false, false] };
     return r; }; }
 { const _et = enemyTurn; enemyTurn = async function (b) {
     if (!b || !b.tw || !alive(b)) return _et.apply(this, arguments);

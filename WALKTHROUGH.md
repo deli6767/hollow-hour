@@ -1,8 +1,8 @@
-# HOLLOW HOUR: full walkthrough (v2.0 release candidate, matches build v1.8-c22)
+# HOLLOW HOUR: full walkthrough (v2.0.1, matches the public v2.0.1 build)
 
 Controls: arrows/WASD move · Z/Enter/Space confirm · X/Shift back · Esc pause. On touch: the floating joystick on the left, buttons on the right.
 Battle menu: **STRIKE** (attack: stop the needle near the centre) · **CHAT** (ACT options) · **POCKET** (items) · **RELEASE** (Let Go = spare; Slip Away = flee, not available against bosses).
-Sparing: every CHAT option adds or removes calm. At 100 calm the name turns gold, and RELEASE → Let Go spares the enemy.
+Sparing: you have to CHAT with an enemy at least once (any option except Check) before you can RELEASE them. CHAT options add or remove calm. At 100 calm the name turns gold, and RELEASE → Let Go spares them. Wearing them down to low HP also works, but only after you have talked.
 Files: Title → PLAY · FILES gives you three files. Each one shows its name, location, play time, and endings. CONTINUE, NEW (asks before overwriting), DELETE. A save from before v1.3 shows up as File 1. CREDITS is on the title screen and on every end screen (BACK or Esc returns).
 
 ## 1. The main path (every route)
