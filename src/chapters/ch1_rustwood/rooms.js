@@ -27,7 +27,7 @@ Object.assign(ROOMS, {
           await say('TOLLY', 'Oh! Oh my. You fell right out of the Bell of Hours, didn\'t you?', 'I heard it. A little "ding". First new sound in forty years.',
             'I\'m Tolly. I\'ve been walking to the bakery since 11:59. Almost there. Any decade now.',
             'Listen, little chime. Folk out here are stuck. Same minute, over and over. It makes them... prickly.',
-            'If one jumps out at you, you can STRIKE them... or CHAT with them. You have to talk first. Then calm them enough, or wear them down after you\'ve talked, and you can RELEASE them. Let them go home.',
+            'If one jumps out at you, you can STRIKE them... or CHAT with them. You have to talk first. Even the big ones. Then calm them enough, or wear them down after you\'ve talked, and you can RELEASE them. Let them go home.',
             'And when things get dangerous, your spark curls up into its core. Dodge, dodge, dodge!',
             'That little bell on the post? Ring it. It keeps the moment safe. Very handy, being kept.',
             'The jester lives up in the Belfry, past town. If anyone can get midnight moving again... it might be a fresh chime like you.');

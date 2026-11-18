@@ -1,8 +1,8 @@
-# HOLLOW HOUR: full walkthrough (v2.0.1, matches the public v2.0.1 build)
+# HOLLOW HOUR: full walkthrough (v2.0.2, matches the public v2.0.2 build)
 
 Controls: arrows/WASD move · Z/Enter/Space confirm · X/Shift back · Esc pause. On touch: the floating joystick on the left, buttons on the right.
 Battle menu: **STRIKE** (attack: stop the needle near the centre) · **CHAT** (ACT options) · **POCKET** (items) · **RELEASE** (Let Go = spare; Slip Away = flee, not available against bosses).
-Sparing: you have to CHAT with an enemy at least once (any option except Check) before you can RELEASE them. CHAT options add or remove calm. At 100 calm the name turns gold, and RELEASE → Let Go spares them. Wearing them down to low HP also works, but only after you have talked.
+Sparing: you have to CHAT with an enemy at least once (any option except Check) before you can RELEASE them. CHAT options add or remove calm. At 100 calm the name turns gold, and RELEASE → Let Go spares them. Wearing them down to low HP also works, but only after you have talked. Bosses work the same way: each keeps its own rule (Lockkeeper wants LOW tide or wear-down, the Twins both at once, MERIDIAN his spring spent), and every one also needs at least one CHAT first. For MERIDIAN, any CHAT (Ask Why, Laugh at Joke, Wind His Key...) at any point in the fight counts.
 Files: Title → PLAY · FILES gives you three files. Each one shows its name, location, play time, and endings. CONTINUE, NEW (asks before overwriting), DELETE. A save from before v1.3 shows up as File 1. CREDITS is on the title screen and on every end screen (BACK or Esc returns).
 
 ## 1. The main path (every route)

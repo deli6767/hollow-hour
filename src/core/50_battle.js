@@ -49,7 +49,7 @@ async function bDodge(b, def, d) {
   if (b.tfx) endTfx(b, true); REC.on = false; player.slip = false; b.runner = null; clearBullets(true); setBlue(false); arena.av = 0; if (arena.rot) arena.rotHome = true; setArena(...TBOX);
 }
 function flavor(b) { if (b.mer && b.mer.spent) return 'MERIDIAN can barely stand. His spring is spent. The bell waits.'; return spareable(b) ? b.e.calm : pick(b.e.flavor); }
-const spareable = b => b.mer ? b.mer.spent : (b.calm >= 100 || (b.talked && b.hp <= b.maxhp * 0.25));
+const spareable = b => !!b.talked && (b.mer ? b.mer.spent : (b.calm >= 100 || b.hp <= b.maxhp * 0.25)); /* v2.0.2: every fight, bosses included, needs one real ACT first */
 async function battleLoop(b) {
   await sleep(10);
   b.st = 'trans'; await bWait(b, 'trans');
@@ -85,13 +85,14 @@ async function playerTurn(b) {
       const was = spareable(b); b.talked = true; b.calm = clamp(b.calm + r.c, 0, 100); if (r.say) b.pendingSay = r.say;
       if (r.c > 0) burst(EX, EY + 20, 10, '#ffd36e', 120, 0.6, 3); if (r.c < 0) shake(4, 0.2);
       await bMsg(b, r.t); if (!was && spareable(b) && !b.mer) { sfx('spare'); await bMsg(b, `${b.e.name} seems calm now. You could RELEASE them.`); }
+      else if (!was && spareable(b) && b.mer) { sfx('spare'); await bMsg(b, 'MERIDIAN heard you. You could RELEASE him now.'); }
       return;
     }
     if (cmd === 2) { const key = hero.items[pickI]; await useItem(b, pickI, key); return; }
     if (cmd === 3) {
       if (pickI === 0) {
         if (spareable(b)) { await doSpare(b); return 'end'; }
-        await bMsg(b, b.mer ? 'MERIDIAN laughs. "let go? i\'m not done yet, spark."' : (!b.talked ? `${b.e.name} won't listen until you've talked to it.` : `${b.e.name} isn't calm enough to let go yet.`)); return;
+        await bMsg(b, b.mer ? (b.mer.spent && !b.talked ? 'MERIDIAN wheezes. "you haven\'t said a word to me, spark. let go of what?"' : 'MERIDIAN laughs. "let go? i\'m not done yet, spark."') : (!b.talked ? `${b.e.name} won't listen until you've talked to it.` : `${b.e.name} isn't calm enough to let go yet.`)); return;
       }
       if (b.id === 'mopsley') { sfx('flee'); hero.flags.mop_fight = 'slip'; giveKey('button');
         await bMsg(b, ['You try to slip away...', '...and you DO slip. On the wet floor. You skid right out of the fight on your back.', 'Mopsley laughs so hard he has to sit down on his bucket.', '"Oh, that\'s the one. That\'s the one I was waiting for." He tosses you a brass button. "Here. For the trouble."', '(You got the Brass Button.)']);

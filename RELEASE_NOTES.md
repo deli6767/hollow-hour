@@ -1,4 +1,7 @@
 # Release notes
+**Hollow Hour v2.0.2: bosses need a word first too**
+- Every boss now also needs at least one CHAT (not Check) before RELEASE works, on top of its own rule. MERIDIAN still has to be spent, and now you must also have talked to him once in the fight ("you haven't said a word to me, spark. let go of what?").
+
 **Hollow Hour v2.0.1: talk before you can spare**
 - You have to CHAT with an enemy at least once (any option except Check) before RELEASE will let them go. Wearing them down to low HP still works as a mercy path, but only after you have talked. MERIDIAN is unchanged: he still only yields when his spring is spent.
 - Tolly's advice in Bellfall mentions the new rule.

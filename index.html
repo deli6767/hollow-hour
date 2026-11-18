@@ -66,7 +66,7 @@ button:active{transform:scale(.96);background:#2a1c40}
     <div class="row"><button id="b-play">PLAY · FILES</button></div>
     <div class="row"><button data-go="rush">BOSS RUSH</button><button data-go="practice">PRACTICE</button><button data-go="records">RECORDS</button><button data-go="credits">CREDITS</button><button data-go="settings">SETTINGS</button></div>
     <div class="sub" id="title-hint"></div>
-    <div class="sub" style="opacity:.55">v2.0.1</div>
+    <div class="sub" style="opacity:.55">v2.0.2</div>
   </div>
   <div class="screen" id="s-files"><h2>FILES</h2><div id="files-list"></div><button data-go="title" data-back>BACK</button></div>
   <div class="screen" id="s-name"><h2>NAME THE FALLEN SPARK</h2><div class="sub">(max 8 letters)</div>
@@ -1594,7 +1594,7 @@ Object.assign(ROOMS, {
           await say('TOLLY', 'Oh! Oh my. You fell right out of the Bell of Hours, didn\'t you?', 'I heard it. A little "ding". First new sound in forty years.',
             'I\'m Tolly. I\'ve been walking to the bakery since 11:59. Almost there. Any decade now.',
             'Listen, little chime. Folk out here are stuck. Same minute, over and over. It makes them... prickly.',
-            'If one jumps out at you, you can STRIKE them... or CHAT with them. You have to talk first. Then calm them enough, or wear them down after you\'ve talked, and you can RELEASE them. Let them go home.',
+            'If one jumps out at you, you can STRIKE them... or CHAT with them. You have to talk first. Even the big ones. Then calm them enough, or wear them down after you\'ve talked, and you can RELEASE them. Let them go home.',
             'And when things get dangerous, your spark curls up into its core. Dodge, dodge, dodge!',
             'That little bell on the post? Ring it. It keeps the moment safe. Very handy, being kept.',
             'The jester lives up in the Belfry, past town. If anyone can get midnight moving again... it might be a fresh chime like you.');
@@ -2351,7 +2351,7 @@ async function bDodge(b, def, d) {
   if (b.tfx) endTfx(b, true); REC.on = false; player.slip = false; b.runner = null; clearBullets(true); setBlue(false); arena.av = 0; if (arena.rot) arena.rotHome = true; setArena(...TBOX);
 }
 function flavor(b) { if (b.mer && b.mer.spent) return 'MERIDIAN can barely stand. His spring is spent. The bell waits.'; return spareable(b) ? b.e.calm : pick(b.e.flavor); }
-const spareable = b => b.mer ? b.mer.spent : (b.calm >= 100 || (b.talked && b.hp <= b.maxhp * 0.25));
+const spareable = b => !!b.talked && (b.mer ? b.mer.spent : (b.calm >= 100 || b.hp <= b.maxhp * 0.25)); /* v2.0.2: every fight, bosses included, needs one real ACT first */
 async function battleLoop(b) {
   await sleep(10);
   b.st = 'trans'; await bWait(b, 'trans');
@@ -2387,13 +2387,14 @@ async function playerTurn(b) {
       const was = spareable(b); b.talked = true; b.calm = clamp(b.calm + r.c, 0, 100); if (r.say) b.pendingSay = r.say;
       if (r.c > 0) burst(EX, EY + 20, 10, '#ffd36e', 120, 0.6, 3); if (r.c < 0) shake(4, 0.2);
       await bMsg(b, r.t); if (!was && spareable(b) && !b.mer) { sfx('spare'); await bMsg(b, `${b.e.name} seems calm now. You could RELEASE them.`); }
+      else if (!was && spareable(b) && b.mer) { sfx('spare'); await bMsg(b, 'MERIDIAN heard you. You could RELEASE him now.'); }
       return;
     }
     if (cmd === 2) { const key = hero.items[pickI]; await useItem(b, pickI, key); return; }
     if (cmd === 3) {
       if (pickI === 0) {
         if (spareable(b)) { await doSpare(b); return 'end'; }
-        await bMsg(b, b.mer ? 'MERIDIAN laughs. "let go? i\'m not done yet, spark."' : (!b.talked ? `${b.e.name} won't listen until you've talked to it.` : `${b.e.name} isn't calm enough to let go yet.`)); return;
+        await bMsg(b, b.mer ? (b.mer.spent && !b.talked ? 'MERIDIAN wheezes. "you haven\'t said a word to me, spark. let go of what?"' : 'MERIDIAN laughs. "let go? i\'m not done yet, spark."') : (!b.talked ? `${b.e.name} won't listen until you've talked to it.` : `${b.e.name} isn't calm enough to let go yet.`)); return;
       }
       if (b.id === 'mopsley') { sfx('flee'); hero.flags.mop_fight = 'slip'; giveKey('button');
         await bMsg(b, ['You try to slip away...', '...and you DO slip. On the wet floor. You skid right out of the fight on your back.', 'Mopsley laughs so hard he has to sit down on his bucket.', '"Oh, that\'s the one. That\'s the one I was waiting for." He tosses you a brass button. "Here. For the trouble."', '(You got the Brass Button.)']);
