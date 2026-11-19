@@ -59,7 +59,9 @@ A.bailOut = { name: 'Bail Out', dur: 7, size: [280, 190], desc: 'Trickle ladles 
   run(S) { const N = 5, rh = () => arena.h / N; let lastK = '';
     S.every(0.25 / S.d, n => { let a, b, k; /* c21: was 0.34 @300 */ /* c19: was 0.42 @270 */ /* c10 tune: was 0.8 s @165 */ do { a = irand(0, N - 1); b = irand(0, N - 1); k = Math.min(a, b) + ',' + Math.max(a, b); } while (a === b || k === lastK); lastK = k;
       const side = n % 2 ? 1 : -1; sfx('warn');
-      for (const r of [a, b]) shot(side * (hw() + 6), -hh() + rh() * (r + 0.5), -side * 340 * S.d, 0, 10, '#bfe8ff', { warn: 0.45 }); }, 0.2, 6.2); } };
+      for (const r of [a, b]) { const y = -hh() + rh() * (r + 0.5); /* v2.0.3: 2x lead (0.45 -> 0.9 s) + a lit lane across the whole row; speed unchanged (340) */
+        laser(side * (hw() + 6), y, side > 0 ? Math.PI : 0, rh() * 0.7, 0.9, 0, { harmless: true, len: arena.w + 12, col: '#bfe8ff' });
+        shot(side * (hw() + 6), y, -side * 340 * S.d, 0, 10, '#bfe8ff', { warn: 0.9 }); } }, 0.2, 5.75); } };
 // BOTH · SHARED HINGE: the twin doors swing in from alternating sides; each door has one gap that drifts gently.
 A.sharedHinge = { name: 'Shared Hinge', dur: 8, size: [300, 200], desc: 'two doors, one hinge. they swing in from alternating sides, each door pair shares one gap',
   run(S) { let gy = 0;
@@ -73,7 +75,7 @@ A.halfHinge = { name: 'Half a Hinge', dur: 8, size: [300, 200], desc: 'one door,
     S.every(0.6 / S.d, n => { /* c21: was 0.7 @150, drift 46 */ /* c19: was 0.95 @118, drift 30, gap 32 */ gy = clamp(gy + rand(-54, 54), -hh() + 34, hh() - arena.h * 0.22 - 30); wallPair(-hw() - 10, 165 * S.d, gy, 27, '#7a7a8a'); }, 0.9, 7.2); } };
 for (const k of ['bailIn', 'bailOut', 'sharedHinge', 'halfHinge']) A[k].id = k;
 /* ---- the twins ---- */
-const BILGE_BASE = { boss: true, hp: 70, def: 1, atk: 1.25, torque: 40, cogs: 45, d: 1.12, art: 'bilgewater', track: 'bilge', mini: 0.32,
+const BILGE_BASE = { boss: true, hp: 70, critHits: 8, def: 1, atk: 1.25, torque: 40, cogs: 45, d: 1.12, art: 'bilgewater', track: 'bilge', mini: 0.32,
   intro: 'THE BILGEWATER TWINS block the sluice! It is SLOSH\'s turn. (Probably.)' };
 const TWIN_E = [
   Object.assign({}, BILGE_BASE, { id: 'bilgewater', name: 'SLOSH', title: 'the Bilgewater Twin who bails in', voice: 190, attacks: ['bailIn'],
@@ -118,7 +120,7 @@ function twinLoop(b) { (async () => { try { await enemyTurn(b); } catch (e) { co
 const twinSet = (b, i) => { const tw = b.tw; tw.cur = i; b.e = tw.dead >= 0 ? tw.lone : TWIN_E[i]; b.hp = b.shownHp = tw.hp[i]; b.calm = tw.calm[i]; b.talked = !!(tw.talked && tw.talked[i]); };
 const twinStore = b => { const tw = b.tw; tw.hp[tw.cur] = b.hp; tw.calm[tw.cur] = b.calm; if (!tw.talked) tw.talked = [false, false]; tw.talked[tw.cur] = !!b.talked; };
 { const _sb = startBattle; startBattle = function (id, opts = {}) { const r = _sb.apply(this, arguments);
-    if (id === 'bilgewater' && B && !opts.practice) B.tw = { cur: 0, hp: [70, 70], calm: [0, 0], max: 70, dead: -1, round: 0, lone: null, talked: [false, false] };
+    if (id === 'bilgewater' && B && !opts.practice) B.tw = { cur: 0, hp: [B.maxhp, B.maxhp], calm: [0, 0], max: B.maxhp, dead: -1, round: 0, lone: null, talked: [false, false] };
     return r; }; }
 { const _et = enemyTurn; enemyTurn = async function (b) {
     if (!b || !b.tw || !alive(b)) return _et.apply(this, arguments);

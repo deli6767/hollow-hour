@@ -1,4 +1,4 @@
-/* Boss phase stingers by Add ons for Hollow Hour. Replace PHASE banners with a sound cue. Load after 00_core.js.
+/* Boss phase stingers by Greg for Hollow Hour. Replace PHASE banners with a sound cue. Load after 00_core.js.
    hhPhaseStinger(id, phase?) - id: mopsley|wicklow|grit|cuckoo|meridian|quill(archivist)|lockkeeper|bilgewater|vesper, unknown ids get a generic cue.
    Uses the sfx bus (respects sfx volume). Each ~0.6-1.4s, rises in pitch with phase number. */
 function hhPhaseStinger(id, phase) {

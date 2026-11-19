@@ -92,8 +92,9 @@ function setArena(w, h) { arena.tw = w * arena.tiny; arena.th = h * arena.tiny; 
 function snapArena(w, h) { setArena(w, h); arena.w = arena.tw; arena.h = arena.th; }
 function updateArena(dt) {
   const dw = arena.tw - arena.w, dh = arena.th - arena.h;
-  const spw = Math.max(260, Math.abs(dw) * 7) * dt, sph = Math.max(260, Math.abs(dh) * 7) * dt;
+  const kk = arena.k || 7, spw = Math.max(260, Math.abs(dw) * kk) * dt, sph = Math.max(260, Math.abs(dh) * kk) * dt; /* v2.0.3: arena.k = slower bloom for FULL DIAL */
   arena.w += clamp(dw, -spw, spw); arena.h += clamp(dh, -sph, sph);
+  ARENA_Y = Math.min(340, H - arena.h / 2 - 8); /* v2.0.3: a box taller than 384 (MERIDIAN's FULL DIAL) slides up to stay on screen; every other box stays at 340 */
   if (arena.rotHome) {
     let r = ((arena.rot % 6.283) + 6.283) % 6.283; if (r > Math.PI) r -= 6.283;
     arena.rot = Math.abs(r) < 2.5 * dt ? 0 : r - Math.sign(r) * 2.5 * dt; if (arena.rot === 0) arena.rotHome = false;

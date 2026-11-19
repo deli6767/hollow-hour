@@ -1,4 +1,4 @@
-/* Weightworks rail art by Add ons for Hollow Hour. Drop in after src/core/30_art.js.
+/* Weightworks rail art by Greg for Hollow Hour. Drop in after src/core/30_art.js.
    hhRail(pts, state, t): pts are world [x,y] points, state is 'idle' | 'route' | 'done'.
    Draws gravel bed, wooden sleepers, twin iron rails with highlights, and bolts at joints.
    'route' rails get a soft violet pulse running along them, 'done' glows gold. */

@@ -98,10 +98,10 @@ const MER_ATTACKS = [
       return (t, dt) => { if (t > 1.3) a += dir * 1.9 * dt; }; } },
   { name: 'Rewind', phase: 3, dur: 9.5, size: [280, 210], desc: 'REWIND: the spiral runs backwards into the centre, then fires again', rec: true, timeplay: true,
     run(S) { let a = 0; S.at(0, () => { shot(0, 0, 0, 0, 22, '#e070ff', { warn: 0.9, life: 0.9 }); sfx('warn'); });
-      S.every(0.11, () => { for (let k = 0; k < 3; k++) { const aa = a + k * 2.094; shot(0, 0, Math.cos(aa) * 100 * S.d, Math.sin(aa) * 100 * S.d, 4.5, k ? '#e070ff' : '#fff'); } }, 0.9, 8.6);
-      S.every(1.4, n => { const side = n % 2; wallPair(side ? hw() + 10 : -hw() - 10, (side ? -1 : 1) * 150, clamp(P.y, -hh() + 40, hh() - 40), 38, '#c0a8ff'); }, 1.5, 8.4);
+      S.every(0.18, () => { for (let k = 0; k < 3; k++) { const aa = a + k * 2.094; shot(0, 0, Math.cos(aa) * 100 * S.d, Math.sin(aa) * 100 * S.d, 4.5, k ? '#e070ff' : '#fff'); } }, 0.9, 8.6); /* v2.0.3 tone-down: spiral 0.11 -> 0.18 s so an arm can be crossed (was a solid line: you had to out-run its turn) */
+      S.every(1.4, n => { const side = n % 2; wallPair(side ? hw() + 10 : -hw() - 10, (side ? -1 : 1) * 150, clamp(P.y, -hh() + 40, hh() - 40), 46, '#c0a8ff'); }, 1.5, 8.4); /* v2.0.3: wall gap 38 -> 46 */
       tfx(S, 3.4, 'rewind', 1.4, {}); tfx(S, 6.4, 'rewind', 1.1, { boost: 1.1, dup: true });
-      return (t, dt) => { if (t > 0.9) a += 1.7 * dt; }; } },
+      return (t, dt) => { if (t > 0.9) a += 1.4 * dt; }; } }, /* v2.0.3: turn 1.7 -> 1.4 rad/s */
   { name: 'Echo Chorus', phase: 3, dur: 9.5, size: [300, 210], desc: 'three past selves at 0.8 s, 1.6 s, 2.4 s, and one in the mirror',
     run(S) { const hist = []; S.at(0, () => { echoGhost(S, hist, 0.8, '#9fd8ff'); }); S.at(1.2, () => echoGhost(S, hist, 1.6, '#c0a8ff')); S.at(2.4, () => echoGhost(S, hist, 2.4, '#e070ff')); S.at(4.5, () => { S.alert = 'MIRROR'; S.alertT = 0.7; echoGhost(S, hist, 0.5, '#ff9a3c', true); });
       S.every(0.6 / S.d, () => { const a = rand(0, 6.283); tickShot(S, Math.cos(a) * 190, Math.sin(a) * 190, a + Math.PI, 30 * S.d, 4.5, '#e8c070'); }, 1, 9); 
@@ -111,10 +111,10 @@ const MER_ATTACKS = [
       S.every(0.55 / S.d, n => { const e = n % 4; let x, y; if (e < 2) { x = rand(-hw(), hw()); y = e ? -hh() - 10 : hh() + 10; } else { y = rand(-hh(), hh()); x = e === 2 ? -hw() - 10 : hw() + 10; }
         const a = Math.atan2(P.y - y, P.x - x) + rand(-0.15, 0.15); shot(x, y, Math.cos(a) * 125, Math.sin(a) * 125, 4.5, '#ff6677'); }, 1, 9.2); } },
   { name: 'Desperation', phase: 4, dur: 12, size: [280, 200], desc: 'DESPERATION: freeze, rewind into DOUBLE bullets, then skip ahead (ghosts show where they land)', rec: true, timeplay: true,
-    run(S) { let a = 0; S.at(0, () => { shot(0, 0, 0, 0, 24, '#e070ff', { warn: 0.9, life: 0.9 }); sfx('warn'); }); S.every(0.18 / S.d, () => { for (let k = 0; k < 3; k++) { const aa = a + k * 2.094; shot(0, 0, Math.cos(aa) * 85 * S.d, Math.sin(aa) * 85 * S.d, 4.5, k ? '#ff9a3c' : '#fff'); } }, 0.9, 10.6);
+    run(S) { let a = 0; S.at(0, () => { shot(0, 0, 0, 0, 24, '#e070ff', { warn: 0.9, life: 0.9 }); sfx('warn'); }); S.every(0.24 / S.d, () => { for (let k = 0; k < 3; k++) { const aa = a + k * 2.094; shot(0, 0, Math.cos(aa) * 85 * S.d, Math.sin(aa) * 85 * S.d, 4.5, k ? '#ff9a3c' : '#fff'); } }, 0.9, 10.6); /* v2.0.3 tone-down: spiral 0.18 -> 0.24 /d, turn 1.5 -> 1.25 */
       S.every(1.5, n => { const side = n % 2; wallPair(side ? hw() + 10 : -hw() - 10, (side ? -1 : 1) * 150, clamp(P.y, -hh() + 40, hh() - 40), 40, '#c0a8ff'); }, 1.2, 10.4);
       tfx(S, 2.6, 'freeze', 1.2, { boost: 1.25 }); tfx(S, 5.0, 'rewind', 1.2, { dup: true }); tfxJump(S, 8.4, 0.5);
-      return (t, dt) => { a += 1.5 * dt; }; } },
+      return (t, dt) => { a += 1.25 * dt; }; } },
   { name: 'Last Countdown', phase: 4, dur: 11, size: [300, 210], desc: 'countdown bombs, then TIME STOP mid-blast; the rings resume faster',
     run(S) { S.every(0.62 / S.d, () => { const a = rand(0, 6.283), r = rand(60, 95); bomb(S, clamp(P.x + Math.cos(a) * r, -hw() + 14, hw() - 14), clamp(P.y + Math.sin(a) * r, -hh() + 14, hh() - 14), 12, 110 * S.d, 1.6, '#e070ff'); }, 0.2, 9.2);
       S.every(TICK, n => { if (n % 3) return; const x = rand(-hw(), hw()); tickShot(S, x, -hh() - 6, Math.PI / 2, 28 * S.d); }, 0.5, 9.5);

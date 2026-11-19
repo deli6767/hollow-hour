@@ -1,4 +1,4 @@
-/* Stacks bookshelf + Pell polish + Pell motif. Add ons, for Hollow Hour. Load after 30_art.js, 00_core.js and weightworks.js. */
+/* Stacks bookshelf + Pell polish + Pell motif. Greg, for Hollow Hour. Load after 30_art.js, 00_core.js and weightworks.js. */
 
 /* hhShelf(x, y, t, e): drop-in for the ucshelf look. Same footprint as before (about x-42..x+40, y-26..y-4).
    Posts sit OUTSIDE the backing (no overlap), top cap and base board overhang both, books vary in height,

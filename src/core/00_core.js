@@ -157,7 +157,7 @@ function musicTick() {
       if (tr.kick === 2 && i % 4 === 2) tone(150, t, 0.1, 'sine', 0.3, D, 40);
       if (tr.hat && i % 2 === 1) noise(t, 0.03, 0.07, D, 7000);
       if (tr.hat && tr.kick && i % 8 === 4) noise(t, 0.12, 0.13, D, 1500);
-      if (window.hhMusicExtras) hhMusicExtras(tr, t, s); // Add ons layers: undercroft / fileflit / archivist
+      if (window.hhMusicExtras) hhMusicExtras(tr, t, s); // Greg layers: undercroft / fileflit / archivist
     }
     AU.next += 60 / tr.bpm / 4; AU.step++;
   }

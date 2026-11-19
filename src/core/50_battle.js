@@ -22,15 +22,23 @@ const EX = 480, EY = 140, TBOX = [880, 150];
 const BTN_Y = 480, BTN_H = 50, BTNS = ['STRIKE', 'CHAT', 'POCKET', 'RELEASE'];
 const btnRect = i => ({ x: 34 + i * 228, y: BTN_Y, w: 210, h: BTN_H });
 let B = null;
+/* v2.0.3: boss HP scales to the hero's best possible hit, so even a perfect CRITICAL (2.4x aim, top of the 0.92..1.08 roll)
+   with the strongest weapon they carry needs BOSS_CRITS of them (Delon: "it should at least require like 15 crits, so the player experiences the FULL fight").
+   Twins: 8 per twin (16 to finish the fight). MERIDIAN: one crit per attack in his spring, so his bar drains with it. Never lower than the old base HP. */
+const BOSS_CRITS = 15;
+const hhBestEdge = h => { let v = ITEMS[h.weapon] ? ITEMS[h.weapon].v : 0; for (const k of h.items || []) if (ITEMS[k] && ITEMS[k].kind === 'weapon') v = Math.max(v, ITEMS[k].v); return 8 + 2 * (h.coil - 1) + v; };
+const hhMaxCrit = (e, h) => Math.max(1, Math.round(hhBestEdge(h) * 2.4 * 1.08) - e.def);
+const hhBossCrits = e => e.meridian ? MER_ATTACKS.length : (e.critHits || BOSS_CRITS);
+function hhBossHP(e, opts) { if (!e.boss || e.noStrike || (opts && opts.practice) || !hero) return e.hp; return Math.max(e.hp, Math.ceil(hhBossCrits(e) * hhMaxCrit(e, hero) / 10) * 10); }
 function startBattle(id, opts = {}) {
-  const e = ENEMIES[id];
+  const e = ENEMIES[id]; const hp0 = hhBossHP(e, opts);
   resetTouch(); clearBullets(false); particles.length = 0; floaters.length = 0;
-  B = { e, id, hp: e.hp, maxhp: e.hp, calm: 0, talked: false, st: 'trans', transT: 0, turn: 0, counts: {}, sel: 0, sub: 0, list: null, typer: null, lines: [], bubble: null, bubbleT: 0, runner: null,
-    resolve: null, opts, alpha: 1, hurt: 0, shownHp: e.hp, hpBarT: 0, aim: 0, aimDir: 1, slashT: 0, t: 0, flipped: false, forceAtk: null, pendingSay: null, dead: false, bannerT: 0, banner: '', flash: 0, glowFlash: 0, token: {} ,
+  B = { e, id, hp: hp0, maxhp: hp0, calm: 0, talked: false, st: 'trans', transT: 0, turn: 0, counts: {}, sel: 0, sub: 0, list: null, typer: null, lines: [], bubble: null, bubbleT: 0, runner: null,
+    resolve: null, opts, alpha: 1, hurt: 0, shownHp: hp0, hpBarT: 0, aim: 0, aimDir: 1, slashT: 0, t: 0, flipped: false, forceAtk: null, pendingSay: null, dead: false, bannerT: 0, banner: '', flash: 0, glowFlash: 0, token: {} ,
     n(k) { return this.counts[k] || 0; },
     mer: e.meridian ? { idx: 0, phase: -1, cracks: 0, eye: '#fff', dead: 0, raise: 0, spent: false, final: false } : null };
   meta.seen[id] = true; saveMeta();
-  arena.rot = 0; arena.av = 0; arena.rotHome = false; snapArena(60, 20); setArena(...TBOX);
+  arena.rot = 0; arena.av = 0; arena.rotHome = false; arena.k = 0; snapArena(60, 20); setArena(...TBOX);
   Object.assign(player, { x: 0, y: 0, vx: 0, vy: 0, blue: false, onGround: false, inv: 0, flash: 0 });
   state = 'battle'; sfx('encounter'); setTrack(e.track);
   if (opts.practice) { practiceLoop(B); return; }
@@ -46,7 +54,7 @@ async function bDodge(b, def, d) {
   b.typer = null; setArena(def.size[0], def.size[1]); Object.assign(player, { x: 0, y: def.blue ? 30 : 0, vx: 0, vy: 0, inv: 0.3 }); setBlue(def.blue === true);
   resetTouch(); b.runner = null; b.preT = 0.45; b.pendingDef = def; b.pendingD = d; b.tfx = null; b.timerBack = 0; REC.on = !!def.rec; player.slip = !!def.slip;
   await bWait(b, 'dodge');
-  if (b.tfx) endTfx(b, true); REC.on = false; player.slip = false; b.runner = null; clearBullets(true); setBlue(false); arena.av = 0; if (arena.rot) arena.rotHome = true; setArena(...TBOX);
+  if (b.tfx) endTfx(b, true); arena.k = 0; REC.on = false; player.slip = false; b.runner = null; clearBullets(true); setBlue(false); arena.av = 0; if (arena.rot) arena.rotHome = true; setArena(...TBOX);
 }
 function flavor(b) { if (b.mer && b.mer.spent) return 'MERIDIAN can barely stand. His spring is spent. The bell waits.'; return spareable(b) ? b.e.calm : pick(b.e.flavor); }
 const spareable = b => !!b.talked && (b.mer ? b.mer.spent : (b.calm >= 100 || b.hp <= b.maxhp * 0.25)); /* v2.0.2: every fight, bosses included, needs one real ACT first */
@@ -157,14 +165,16 @@ async function doSpare(b) {
   if (!b.opts.rush) { hero.spares++; hero.cogs += cg; if (e.boss) hero.flags['spared_' + b.id] = true; lines.push(`You let ${e.name} go. You found ${cg} COGS they left behind as thanks.`); }
   await bMsg(b, lines); endBattle(b, 'spare');
 }
+/* v2.0.3: boss fights run longer now. once the scripted lines run out the boss just attacks (ACT replies still show) instead of repeating its last line every turn */
+function hhTurnLine(b, T) { return b.turn < T.length ? T[b.turn] : null; }
 async function enemyTurn(b) {
   if (!alive(b)) return;
   const e = b.e;
   if (b.mer) return meridianTurn(b);
-  let line = b.pendingSay || (e.turns ? e.turns[Math.min(b.turn, e.turns.length - 1)] : pick(e.talk)); b.pendingSay = null;
+  let line = b.pendingSay || (e.turns ? hhTurnLine(b, e.turns) : pick(e.talk)); b.pendingSay = null;
   if (line === 'MEDLEY') line = hero.flags.killed_wicklow ? 'A little bird told me what you did to the candle knight. Shall I SING it?' : 'You let the candle knight keep his light. The whole tower heard. Let me sing it for you!';
   if (spareable(b) && !e.turns) line = pick(['...', '(content humming)', '(it seems happy)']);
-  await bTalk(b, line);
+  if (line) await bTalk(b, line);
   let atkId = b.forceAtk || (e.boss ? e.attacks[b.turn % e.attacks.length] : pick(e.attacks)); b.forceAtk = null;
   if (e.boss && b.turn >= e.attacks.length && !b.forceAtk) atkId = pick(e.attacks);
   const def = A[atkId]; meta.seen['atk_' + atkId] = true;
@@ -193,7 +203,7 @@ async function meridianTurn(b) {
   meta.seen['mer_' + m.idx] = true;
   m.raise = 1; await bDodge(b, def, MER_D(def.phase)); m.raise = 0;
   if (!alive(b)) return;
-  { const ch = MER_CHAIN[m.idx % MER_CHAIN.length] || (typeof hhMerV5Chain === 'function' ? hhMerV5Chain(b, m.idx) : null); /* v1.8-c14 violent phase 5 */ if (def.phase >= 3 && ch && !b.opts.practice) await bDodge(b, ch, MER_D(def.phase)); }
+  { const ch = (typeof hhMerFullChain === 'function' && hhMerFullChain(b, m.idx)) || MER_CHAIN[m.idx % MER_CHAIN.length] || (typeof hhMerV5Chain === 'function' ? hhMerV5Chain(b, m.idx) : null); /* v1.8-c14 violent phase 5 */ if (def.phase >= 3 && ch && !b.opts.practice) await bDodge(b, ch, MER_D(def.phase)); }
   if (!alive(b)) return;
   m.idx++; m.cracks = Math.floor(m.idx / MER_ATTACKS.length * 5.5); b.calm = Math.round(m.idx / MER_ATTACKS.length * 100); b.hurt = 0.4; sfx('bosshurt'); burst(EX, EY, 25, '#ffd36e', 220, 0.7, 3);
   if (m.idx >= MER_ATTACKS.length) {
@@ -207,6 +217,7 @@ async function practiceLoop(b) {
   while (alive(b)) { await bDodge(b, b.opts.practice, b.opts.d || 1); if (!alive(b)) return; b.loops++; sfx('clear'); burst(ARENA_X, ARENA_Y, 30, '#ffd36e', 200, 0.6, 3); await bWait(b, 'pause', { pauseT: 0.5 }); }
 }
 function endBattle(b, result) {
+  if (b.devHp) hero.glow = maxGlow(hero);
   b.over = true; clearBullets(false); setBlue(false); B = null;
   const cb = b.opts.onEnd; if (cb) cb(result, b); else backToWorld(result, b);
 }
@@ -217,7 +228,7 @@ function soulHit(bl) {
   player.inv = IFRAMES; player.flash = 0.25; sfx('hit'); shake(7, 0.25); burstLocal(player.x, player.y, 18, '#ff9a3c', 200, 0.5, 3);
   if (b.opts.practice) { b.phits = (b.phits || 0) + 1; return; }
   hero.glow -= dmg; floatText(localToWorld(player.x, player.y).x, localToWorld(player.x, player.y).y - 20, '-' + dmg, '#ff9a3c', 18, 0.7);
-  if (hero.glow <= 0) { hero.glow = 0; coreBreak(b); }
+  if (hero.glow <= 0) { hero.glow = 0; if (b.devHp) { if (!b.devHp.died) { b.devHp.died = true; b.devHp.diedT = b.t; sfx('death'); floatText(W / 2, 420, 'WOULD HAVE DIED', '#ff5a6a', 26, 1.4); } } else coreBreak(b); } /* v2.0.3: dev battles never break the core */
 }
 function coreBreak(b) {
   b.st = 'broken'; b.brokenT = 0; b.runner = null; sfx('death'); shake(12, 0.6);
@@ -249,7 +260,7 @@ function endTfx(b, quiet) {
 function drawTimer(b) { // the on-screen turn timer (MERIDIAN messes with this one)
   const r = b.runner; if (!r || b.st !== 'dodge') return;
   const tf = b.tfx, mode = tf ? tf.mode : null, warn = r.tfxWarn && r.alertT > 0;
-  const x = Math.min(W - 60, ARENA_X + arena.w / 2 + 62), y = ARENA_Y - arena.h / 2 + 34, R = 24;
+  const full = arena.w > W - 120, x = full ? W - 50 : Math.min(W - 60, ARENA_X + arena.w / 2 + 62), y = full ? 104 : ARENA_Y - arena.h / 2 + 34, R = 24; /* v2.0.3: under the pause button in FULL DIAL */
   let left = Math.max(0, r.def.dur - r.t + (b.timerBack || 0));
   const col = mode === 'freeze' ? '#9fd8ff' : mode === 'rewind' ? '#e070ff' : mode === 'ff' ? '#ff9a3c' : warn ? (Math.floor(b.t * 12) % 2 ? '#ff9a3c' : '#fff') : '#e8c070';
   ctx.save(); ctx.translate(x, y);
@@ -392,7 +403,7 @@ function drawBattle() {
   // box
   ctx.save(); ctx.translate(ARENA_X + (b.tfx && b.tfx.mode === 'rewind' ? rand(-2.5, 2.5) : 0), ARENA_Y); ctx.rotate(arena.rot);
   const aw = arena.w, ah = arena.h;
-  ctx.fillStyle = '#05040a'; ctx.fillRect(-aw / 2, -ah / 2, aw, ah);
+  ctx.fillStyle = ah > 400 ? 'rgba(5,4,10,.78)' : '#05040a'; ctx.fillRect(-aw / 2, -ah / 2, aw, ah); /* v2.0.3 FULL DIAL: MERIDIAN shows faintly through the full-screen box */
   ctx.save(); ctx.beginPath(); ctx.rect(-aw / 2, -ah / 2, aw, ah); ctx.clip();
   if (b.st === 'dodge' || b.st === 'broken') {
     ctx.strokeStyle = 'rgba(200,160,80,.08)'; ctx.lineWidth = 1; for (let x = -aw / 2; x < aw / 2; x += 20) line(x, -ah / 2, x, ah / 2, 'rgba(200,160,80,.06)', 1); for (let y = -ah / 2; y < ah / 2; y += 20) line(-aw / 2, y, aw / 2, y, 'rgba(200,160,80,.06)', 1);
@@ -447,12 +458,13 @@ function drawBattle() {
   // stat line
   const sy = 453; ctx.font = `bold 17px ${FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#f4ecd8';
   ctx.fillText(b.opts.practice ? 'PRACTICE' : `${hero.name}`, 40, sy); ctx.fillStyle = '#c8a050'; ctx.fillText(b.opts.practice ? '' : `COIL ${hero.coil}`, 180, sy);
-  if (!b.opts.practice) { ctx.fillStyle = '#ddd'; ctx.fillText('GLOW', 300, sy); const mg = maxGlow(hero), bw = Math.min(200, 60 + mg * 2.4);
-    ctx.fillStyle = '#3a1a0a'; ctx.fillRect(360, sy - 10, bw, 20); hhGhostBar(b, mg, 360, sy - 10, bw, 20); ctx.fillStyle = b.glowFlash > 0 ? '#fff' : '#ff9a3c'; ctx.fillRect(360, sy - 10, bw * hero.glow / mg, 20); ctx.fillStyle = '#f4ecd8'; ctx.fillText(`${hero.glow} / ${mg}`, 370 + bw, sy); }
+  if (!b.opts.practice) { ctx.fillStyle = '#ddd'; ctx.fillText('GLOW', 300, sy); const mg = maxGlow(hero), bw = Math.min(200, 60 + mg * 2.4), real = b.devHp ? mg : hero.glow;
+    ctx.fillStyle = '#3a1a0a'; ctx.fillRect(360, sy - 10, bw, 20); if (!b.devHp) hhGhostBar(b, mg, 360, sy - 10, bw, 20); ctx.fillStyle = b.glowFlash > 0 ? '#fff' : '#ff9a3c'; ctx.fillRect(360, sy - 10, bw * real / mg, 20); ctx.fillStyle = '#f4ecd8'; ctx.fillText(`${real} / ${mg}`, 370 + bw, sy);
+    if (b.devHp) hhDevHpBar(b, mg, sy); }
   else { ctx.fillStyle = '#ccc'; ctx.fillText(`${b.opts.practice.name} · clears ${b.loops || 0} · hits ${b.phits || 0}`, 180, sy); }
-  if (player.blue && b.st === 'dodge') { ctx.fillStyle = '#7fb6ff'; ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT}`; ctx.fillText('WEIGHTED · jump: ↑ / W / Space', W - 30, sy); }
+  if (player.blue && b.st === 'dodge') { ctx.fillStyle = '#7fb6ff'; ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT}`; ctx.fillText('WEIGHTED · jump: ↑ / W / Space', W - 30, b.devHp ? sy - 24 : sy); }
   // buttons
-  if (!b.opts.practice) for (let i = 0; i < 4; i++) { const r = btnRect(i), on = b.st === 'menu' && b.sel === i, active = b.st === 'menu' || b.st === 'list';
+  if (!b.opts.practice && arena.h < 400) for (let i = 0; i < 4; i++) { const r = btnRect(i), on = b.st === 'menu' && b.sel === i, active = b.st === 'menu' || b.st === 'list';
     ctx.globalAlpha = active ? 1 : 0.45; rrect(r.x, r.y, r.w, r.h, 8); ctx.fillStyle = on ? '#3a2a10' : '#120c1e'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = on ? '#ffd36e' : '#c8a050'; ctx.stroke();
     drawBtnIcon(i, r.x + 30, r.y + r.h / 2, on ? '#ffd36e' : '#c8a050', b.t); ctx.font = `bold 20px ${FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = on ? '#ffd36e' : '#e8d8b0'; ctx.fillText(BTNS[i], r.x + 58, r.y + r.h / 2 + 1); ctx.globalAlpha = 1; }
   drawTimeFxOverlay(b); drawTimer(b);
@@ -528,6 +540,15 @@ function drawBossStage(b) {
 let _frzL = null;
 function frzLayer() { const c = ctx.canvas; if (!_frzL) _frzL = document.createElement('canvas'); if (_frzL.width !== c.width || _frzL.height !== c.height) { _frzL.width = c.width; _frzL.height = c.height; } return _frzL; }
 
+/* v2.0.3 DEV MODE HEALTH: in a dev-warp battle the real GLOW stays full and can't break; hero.glow quietly plays the part of the
+   NORMAL HP you would have had (same plating / difficulty damage math, heals and phase top-ups apply). It is drawn here in dev blue,
+   flags WOULD HAVE DIED at 0 and the fight goes on. endBattle puts GLOW back to full. Never set outside DEV (74_devwarp.js). */
+function hhDevHpBar(b, mg, sy) { const x = 690, w = 120, g = hero.glow, d = b.devHp;
+  ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `bold 12px ${FONT}`; ctx.fillStyle = '#6ad0ff'; ctx.fillText('NORMAL HP', x, sy - 21);
+  ctx.fillStyle = '#0c2230'; ctx.fillRect(x, sy - 8, w, 16); ctx.fillStyle = '#6ad0ff'; ctx.fillRect(x, sy - 8, w * clamp(g / mg, 0, 1), 16); ctx.strokeStyle = '#6ad0ff'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, sy - 7.5, w - 1, 15);
+  ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#cfefff'; ctx.fillText(`${g} / ${mg}`, x + w + 8, sy);
+  if (d.died) { ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = Math.floor(b.t * 3) % 2 ? '#ff5a6a' : '#ffb0b8'; ctx.fillText('WOULD HAVE DIED', x + 78, sy - 21); }
+  ctx.restore(); }
 /* v1.7-c29 hit feedback: damage-trail GLOW bar. On a hit, the lost part stays as a pale red ghost for 0.45 s and then drains
    (about 60% of max GLOW per second), so you can see how much that hit cost. Heals snap the ghost up. Wall-clock based. */
 function hhGhostBar(b, mg, x, y, w, h) { const now = performance.now(), g = hero.glow;

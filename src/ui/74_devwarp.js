@@ -1,5 +1,7 @@
 // v1.8-c13 hidden DEV WARP menu (developer only; never shown to normal players).
-// open on the TITLE screen: desktop = hold Shift and press 1, 2, 0, 1 (within 3 s) · mobile = tap the HOLLOW HOUR logo 5 times (within 2.5 s).
+// v2.0.3 secret openers (anyone can use them; nothing on screen hints at them):
+//   desktop = on the TITLE screen hold Shift and type 1 1 5 9 1 2 0 0 (top-row or numpad digits, <= 2 s between digits)
+//   mobile  = SETTINGS, press and hold the 'Hold to confirm (battle)' button for 12 s -> code keypad -> 11591200. wrong code closes quietly.
 // it never touches FILES 1-3 or records: dev runs save to scratch FILE 9 and every records/endings write is held in memory,
 // then dropped (and FILE 9 wiped) when you go back to the title.
 const DEV = { on: false, preset: 'peace', kit: true, metaBak: null };
@@ -71,12 +73,14 @@ const DEV_REVIEW = [
   ['p5one', 'MERIDIAN P5 · ONE STOPPED CLOCK', 'one', 'meridian', 'belfry', 'one', 'One-kill route final phase'],
   ['p5mixed', "MERIDIAN P5 · CAN'T DECIDE", 'mixed', 'meridian', 'belfry', 'mixed', 'Mixed route final phase'],
   ['p5violent', 'MERIDIAN P5 · LITTLE HAMMER', 'violent', 'meridian', 'belfry', 'violent', 'Violent route, hardest fight'],
+  ['p5full', 'MERIDIAN · FULL DIAL', 'peace', 'meridian', 'belfry', 'full', "v2.0.3: Time's Up, then the box fills the whole screen"],
 ];
 function devReview(key) {
   const r = DEV_REVIEW.find(x => x[0] === key); if (!r) return null; const [, , preset, id, room, extra] = r;
   const tog = Object.assign({}, DEV_TOG); for (const k in DEV_TOG) delete DEV_TOG[k];
   const kit = DEV.kit; DEV.preset = preset; DEV.kit = true;
   try {
+    if (id === 'meridian' && extra === 'full') return devBoss('meridian', 'belfry', MER_ATTACKS.length - 1); /* v2.0.3: last attack -> FULL DIAL */
     if (id === 'meridian') { const b = devBoss('meridian', 'belfry', MER_ATTACKS.findIndex(a => a.phase === 4)); if (b && b.mer) b.mer.v5 = extra; return b; }
     const b = devBoss(id, room); if (b && extra) b.forceAtk = extra; return b;
   } finally { Object.assign(DEV_TOG, tog); DEV.kit = kit; }
@@ -97,7 +101,7 @@ function buildDev() {
   const btn = (g, txt, fn, id, sel) => { const b = document.createElement('button'); b.textContent = txt; if (id) b.id = id; if (sel) b.classList.add('sel'); b.onclick = fn; g.appendChild(b); return b; };
   add('h2', 'DEV WARP');
   add('div', `scratch FILE ${DEV_SLOT} · FILES 1-3 and records are not touched · leaving to the title wipes FILE ${DEV_SLOT}`, 'sub').id = 'dev-warn';
-  add('h3', 'REVIEW THESE (v2.0 milestone: test these first · each sets its own run state + LV8 kit)').id = 'dev-review-h';
+  add('h3', 'REVIEW THESE (v2.0.3: test these first · each sets its own run state + LV8 kit · NORMAL HP meter shows what you would have taken)').id = 'dev-review-h';
   let g = grid(); g.id = 'dev-review';
   for (const [k, t, , , , , hint] of DEV_REVIEW) { const b = btn(g, t, () => devReview(k), 'dev-rv-' + k); const h = document.createElement('small'); h.textContent = hint; h.style.cssText = 'display:block;opacity:.7;font-size:10px'; b.appendChild(h); }
   add('h3', 'RUN STATE (applies to every warp)');
@@ -118,12 +122,40 @@ function buildDev() {
   const back = document.createElement('button'); back.textContent = 'BACK TO TITLE'; back.id = 'b-dev-back'; back.setAttribute('data-back', ''); back.onclick = () => toTitle(); r.appendChild(back);
 }
 { const o = showScreen; showScreen = (n) => { if (n === 'dev') buildDev(); return o(n); }; }
+/* v2.0.3 DEV MODE HEALTH: every battle started while DEV is on (warps, roamers, story fights in a dev run) gets the NORMAL HP meter (50_battle.js hhDevHpBar). */
+{ const _sb = startBattle; startBattle = function (id, opts = {}) { const r = _sb.apply(this, arguments);
+    if (DEV.on && B && !(opts && opts.practice)) { hero.glow = maxGlow(hero); B.devHp = { died: false }; }
+    return r; }; }
 // --- secret openers (title screen only) ---
 const devTitleOn = () => { const t = $('s-title'); return t && t.classList.contains('on'); };
-{ let seq = [], t0 = 0; const CODE = ['Digit1', 'Digit2', 'Digit0', 'Digit1'];
-  addEventListener('keydown', e => { if (!devTitleOn() || !e.shiftKey || !CODE.includes(e.code)) { if (!e.shiftKey) seq = []; return; }
-    const now = performance.now(); if (now - t0 > 3000) seq = []; if (!seq.length) t0 = now; seq.push(e.code);
-    if (seq.join() === CODE.join()) { seq = []; e.preventDefault(); devEnter(); } else if (!CODE.join().startsWith(seq.join())) seq = e.code === CODE[0] ? [e.code] : []; }, true); }
-{ let taps = []; const logo = $('s-title').querySelector('h1');
-  logo.addEventListener('pointerdown', () => { if (!devTitleOn()) return; const now = performance.now(); taps = taps.filter(t => now - t < 2500); taps.push(now); if (taps.length >= 5) { taps = []; devEnter(); } }); }
-window.__hhDev = { DEV, DEV_SLOT, enter: devEnter, exit: devExit, room: devRoom, boss: devBoss, ending: devEnding, review: devReview, REVIEW: DEV_REVIEW, hero: devHero, presets: DEV_PRESETS };
+const DEV_CODE = '11591200', DEV_HOLD_MS = 12000, DEV_GAP_MS = 2000;
+{ let seq = '', tl = 0;
+  addEventListener('keydown', e => { const m = /^(?:Digit|Numpad)(\d)$/.exec(e.code || '');
+    if (!e.shiftKey) { seq = ''; return; } if (!m) { if (!/^Shift/.test(e.code || '')) seq = ''; return; }
+    if (!devTitleOn()) { seq = ''; return; } const now = performance.now(); if (now - tl > DEV_GAP_MS) seq = ''; tl = now;
+    seq = (seq + m[1]).slice(-DEV_CODE.length); if (seq === DEV_CODE) { seq = ''; e.preventDefault(); devEnter(); } }, true); }
+// mobile: 12 s hold on the Settings 'Hold to confirm (battle)' button opens the code keypad (a shorter press is a normal toggle)
+(() => { const s = document.createElement('div'); s.className = 'screen'; s.id = 's-devcode';
+  s.innerHTML = '<h2>· · ·</h2><div class="sub" id="devcode-show">&nbsp;</div><div class="grid" id="devcode-pad"></div><div class="row"><button id="devcode-back" data-back>BACK</button></div>';
+  $('s-title').parentNode.appendChild(s);
+  const st = document.createElement('style'); st.textContent = '#s-devcode{text-align:center}#s-devcode h2{margin:0}#devcode-show{font-size:22px;letter-spacing:8px;min-height:26px;margin:2px 0}#devcode-pad{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center;margin:4px auto}#devcode-pad button{font-size:20px;height:40px;padding:0;margin:0;text-align:center;touch-action:manipulation}#s-devcode .row button{margin-top:4px;padding:4px 16px}';
+  document.head.appendChild(st);
+  let code = ''; const show = () => { $('devcode-show').textContent = code ? '•'.repeat(code.length) : '\u00a0'; };
+  const close = () => { code = ''; show(); showScreen('settings'); };
+  const submit = () => { const ok = code === DEV_CODE; code = ''; show(); if (ok) devEnter(); else close(); };
+  const pad = $('devcode-pad');
+  for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', 'OK']) { const b = document.createElement('button'); b.textContent = k; b.id = 'devcode-k' + (k === '⌫' ? 'del' : k === 'OK' ? 'ok' : k);
+    b.onclick = () => { if (k === '⌫') code = code.slice(0, -1); else if (k === 'OK') return submit(); else { code += k; if (code.length >= DEV_CODE.length) return submit(); } show(); }; pad.appendChild(b); }
+  $('devcode-back').onclick = () => close();
+  window.__hhDevCode = { open: () => { code = ''; show(); showScreen('devcode'); } };
+})();
+const devHoldHook = () => { const body = $('settings-body'); if (!body) return;
+  const row = [...body.querySelectorAll('.set')].find(d => { const l = d.querySelector('label'); return l && /^Hold to confirm/.test(l.textContent); }); if (!row) return;
+  const btn = row.querySelector('button'); if (!btn || btn.__devHold) return; btn.__devHold = true; btn.style.webkitTouchCallout = 'none'; btn.style.userSelect = 'none';
+  let tm = null, fired = false; const stop = () => { if (tm) { clearTimeout(tm); tm = null; } };
+  btn.addEventListener('pointerdown', () => { stop(); fired = false; tm = setTimeout(() => { tm = null; fired = true; __hhDevCode.open(); }, DEV_HOLD_MS); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, stop);
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+  btn.addEventListener('click', e => { if (fired) { fired = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true); };
+{ const o = buildSettings; buildSettings = function () { const r = o.apply(this, arguments); devHoldHook(); return r; }; }
+window.__hhDev = { DEV, DEV_SLOT, CODE: DEV_CODE, HOLD_MS: DEV_HOLD_MS, enter: devEnter, exit: devExit, room: devRoom, boss: devBoss, ending: devEnding, review: devReview, REVIEW: DEV_REVIEW, hero: devHero, presets: DEV_PRESETS };

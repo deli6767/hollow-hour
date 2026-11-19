@@ -1,4 +1,4 @@
-/* Undercroft area theme + Fileflit battle loop. Original, by Add ons for Hollow Hour. Load after src/core/00_core.js. */
+/* Undercroft area theme + Fileflit battle loop. Original, by Greg for Hollow Hour. Load after src/core/00_core.js. */
 (function () {
   const _ = null;
   // UNDERCROFT: quiet, papery, slow. F lydian-ish, open fifths, long gaps. No scratch motif (that's the Archivist's).

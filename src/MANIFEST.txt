@@ -49,6 +49,7 @@ world/48_secrets2.js
 world/49_platform13.js
 world/50_callbacks.js
 chapters/finale_belfry/phase5.js
+chapters/finale_belfry/fulldial.js
 content/55_music.js
 ui/72_options.js
 ui/73_keybind.js

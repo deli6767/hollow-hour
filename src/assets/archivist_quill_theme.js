@@ -1,4 +1,4 @@
-/* ARCHIVIST QUILL boss theme. Original composition by Add ons for Hollow Hour.
+/* ARCHIVIST QUILL boss theme. Original composition by Greg for Hollow Hour.
    Drop in after src/core/00_core.js. Uses that file's TRACKS, tone(), noise(), AU, settings.
    Feel: dusty archive, slow and eerie, D Phrygian with a tritone and a b2 sigh,
    over a quill-scratch rhythm (filtered noise strokes that slide like a nib on paper). */

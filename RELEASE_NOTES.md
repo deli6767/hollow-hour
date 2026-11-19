@@ -1,4 +1,12 @@
 # Release notes
+**Hollow Hour v2.0.3: the full fight**
+- Bosses last longer. Boss HP now scales with your COIL and the best weapon you carry, so every boss takes at least 15 perfect CRITICAL hits to beat, even with the strongest gear (the Bilgewater Twins take 8 each). You see every pattern and both forms. Sparing rules are unchanged: talk first, and the low-HP mercy still starts at 25% of the new HP.
+- MERIDIAN's new finale, FULL DIAL: after his last attack the box blooms out to the whole screen. His hour marks fire from the edges, a long hand sweeps the middle, and your route's final-phase layer comes along. Then the dial clears and the box shrinks back. Works with keyboard and touch.
+- MERIDIAN tone-down on the attacks that were close to impossible: REWIND's spiral can now be crossed (fewer bullets per arm, slower turn, wider wall gaps), DESPERATION's spiral is thinner and turns slower, KEPT TIME rows have wider gaps and more time between them, and LITTLE HAMMER lands less often with a longer 1.8 s fuse and one less shard. He is still the hardest fight.
+- Trickle's Bail Out (the circles across the box) keeps the same speed but now warns twice as long and lights up the whole row first.
+- A secret dev menu, open to everyone who can find the way in. The old openers are gone. In dev battles you can't lose, and a blue NORMAL HP meter shows what you would have taken (WOULD HAVE DIED at 0).
+- Credits: music, sound effects and sprites by Greg; playtesting by Smith.
+
 **Hollow Hour v2.0.2: bosses need a word first too**
 - Every boss now also needs at least one CHAT (not Check) before RELEASE works, on top of its own rule. MERIDIAN still has to be spent, and now you must also have talked to him once in the fight ("you haven't said a word to me, spark. let go of what?").
 
