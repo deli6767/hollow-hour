@@ -203,7 +203,7 @@ async function meridianTurn(b) {
   meta.seen['mer_' + m.idx] = true;
   m.raise = 1; await bDodge(b, def, MER_D(def.phase)); m.raise = 0;
   if (!alive(b)) return;
-  { const ch = (typeof hhMerFullChain === 'function' && hhMerFullChain(b, m.idx)) || MER_CHAIN[m.idx % MER_CHAIN.length] || (typeof hhMerV5Chain === 'function' ? hhMerV5Chain(b, m.idx) : null); /* v1.8-c14 violent phase 5 */ if (def.phase >= 3 && ch && !b.opts.practice) await bDodge(b, ch, MER_D(def.phase)); }
+  { const ch = (typeof hhMerFullChain === 'function' && hhMerFullChain(b, m.idx)) || MER_CHAIN[m.idx % MER_CHAIN.length] || (typeof hhMerV5Chain === 'function' ? hhMerV5Chain(b, m.idx) : null) || (typeof hhMerChimeChain === 'function' ? hhMerChimeChain(b, m.idx) : null); /* v1.8-c14 violent phase 5; v2.0.4 CHIME */ if (def.phase >= 3 && ch && !b.opts.practice) await bDodge(b, ch, MER_D(def.phase)); }
   if (!alive(b)) return;
   m.idx++; m.cracks = Math.floor(m.idx / MER_ATTACKS.length * 5.5); b.calm = Math.round(m.idx / MER_ATTACKS.length * 100); b.hurt = 0.4; sfx('bosshurt'); burst(EX, EY, 25, '#ffd36e', 220, 0.7, 3);
   if (m.idx >= MER_ATTACKS.length) {
@@ -260,7 +260,7 @@ function endTfx(b, quiet) {
 function drawTimer(b) { // the on-screen turn timer (MERIDIAN messes with this one)
   const r = b.runner; if (!r || b.st !== 'dodge') return;
   const tf = b.tfx, mode = tf ? tf.mode : null, warn = r.tfxWarn && r.alertT > 0;
-  const full = arena.w > W - 120, x = full ? W - 50 : Math.min(W - 60, ARENA_X + arena.w / 2 + 62), y = full ? 104 : ARENA_Y - arena.h / 2 + 34, R = 24; /* v2.0.3: under the pause button in FULL DIAL */
+  const full = hhFullBox(), x = full ? 690 : Math.min(W - 60, ARENA_X + arena.w / 2 + 62), y = full ? 29 : ARENA_Y - arena.h / 2 + 34, R = full ? 17 : 24; /* v2.0.4: FULL DIAL keeps the clock in the HUD strip above the box (was over the play field) */
   let left = Math.max(0, r.def.dur - r.t + (b.timerBack || 0));
   const col = mode === 'freeze' ? '#9fd8ff' : mode === 'rewind' ? '#e070ff' : mode === 'ff' ? '#ff9a3c' : warn ? (Math.floor(b.t * 12) % 2 ? '#ff9a3c' : '#fff') : '#e8c070';
   ctx.save(); ctx.translate(x, y);
@@ -274,9 +274,9 @@ function drawTimer(b) { // the on-screen turn timer (MERIDIAN messes with this o
   let txt = left.toFixed(1) + 's';
   if (mode === 'freeze') txt = Math.floor(b.t * 6) % 3 === 0 ? '--.-' : (r.def.dur - r.t).toFixed(1) + 's';
   if (b.timerGlitch > 0 || (r.def.finale && Math.random() < 0.04)) txt = pick(['11:59', '??.?', '0.0s', '99.9s', '-' + left.toFixed(1)]);
-  ctx.fillStyle = col; ctx.fillText(txt, 0, R + 18);
+  ctx.fillStyle = col; if (full) { ctx.textAlign = 'left'; ctx.fillText(txt, R + 10, -6); } else ctx.fillText(txt, 0, R + 18);
   ctx.font = `bold 11px ${FONT}`; const tag = mode === 'freeze' ? '❚❚ STOPPED' : mode === 'rewind' ? '◀◀ REWIND' : mode === 'ff' ? '▶▶ x2' : warn ? '! ! !' : 'TIME';
-  ctx.fillText(tag, 0, -R - 12);
+  if (full) ctx.fillText(tag, R + 10, 10); else ctx.fillText(tag, 0, -R - 12);
   ctx.restore();
   // countdown to resume
   if (mode === 'freeze') { const lft = tf.dur - tf.t; if (lft < 0.9) { const n = Math.ceil(lft / 0.3); ctx.font = `bold ${60 + (lft % 0.3) * 80}px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(n), ARENA_X, ARENA_Y); } }
@@ -405,6 +405,7 @@ function drawBattle() {
   const aw = arena.w, ah = arena.h;
   ctx.fillStyle = ah > 400 ? 'rgba(5,4,10,.78)' : '#05040a'; ctx.fillRect(-aw / 2, -ah / 2, aw, ah); /* v2.0.3 FULL DIAL: MERIDIAN shows faintly through the full-screen box */
   ctx.save(); ctx.beginPath(); ctx.rect(-aw / 2, -ah / 2, aw, ah); ctx.clip();
+  if (hhFullBox()) { ctx.save(); ctx.rotate(-arena.rot); ctx.translate(-ARENA_X, -ARENA_Y); ctx.globalAlpha = 0.5; hhStatLine(b); ctx.restore(); } /* v2.0.4: stat line under the play layer */
   if (b.st === 'dodge' || b.st === 'broken') {
     ctx.strokeStyle = 'rgba(200,160,80,.08)'; ctx.lineWidth = 1; for (let x = -aw / 2; x < aw / 2; x += 20) line(x, -ah / 2, x, ah / 2, 'rgba(200,160,80,.06)', 1); for (let y = -ah / 2; y < ah / 2; y += 20) line(-aw / 2, y, aw / 2, y, 'rgba(200,160,80,.06)', 1);
     const md = b.tfx ? b.tfx.mode : null;
@@ -455,14 +456,8 @@ function drawBattle() {
     const cx = mid + b.aim * gw / 2; ctx.fillStyle = '#05040a'; ctx.fillRect(cx - 6, gy - 8, 12, gh + 16); ctx.fillStyle = '#ffd36e'; ctx.fillRect(cx - 4, gy - 6, 8, gh + 12);
     ctx.font = `14px ${FONT}`; ctx.fillStyle = '#aaa'; ctx.fillText(touch.seen ? 'tap when the needle is in the middle' : 'Z / Enter when the needle is in the middle', x0 + 40, y0 + ah - 22);
   }
-  // stat line
-  const sy = 453; ctx.font = `bold 17px ${FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#f4ecd8';
-  ctx.fillText(b.opts.practice ? 'PRACTICE' : `${hero.name}`, 40, sy); ctx.fillStyle = '#c8a050'; ctx.fillText(b.opts.practice ? '' : `COIL ${hero.coil}`, 180, sy);
-  if (!b.opts.practice) { ctx.fillStyle = '#ddd'; ctx.fillText('GLOW', 300, sy); const mg = maxGlow(hero), bw = Math.min(200, 60 + mg * 2.4), real = b.devHp ? mg : hero.glow;
-    ctx.fillStyle = '#3a1a0a'; ctx.fillRect(360, sy - 10, bw, 20); if (!b.devHp) hhGhostBar(b, mg, 360, sy - 10, bw, 20); ctx.fillStyle = b.glowFlash > 0 ? '#fff' : '#ff9a3c'; ctx.fillRect(360, sy - 10, bw * real / mg, 20); ctx.fillStyle = '#f4ecd8'; ctx.fillText(`${real} / ${mg}`, 370 + bw, sy);
-    if (b.devHp) hhDevHpBar(b, mg, sy); }
-  else { ctx.fillStyle = '#ccc'; ctx.fillText(`${b.opts.practice.name} · clears ${b.loops || 0} · hits ${b.phits || 0}`, 180, sy); }
-  if (player.blue && b.st === 'dodge') { ctx.fillStyle = '#7fb6ff'; ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT}`; ctx.fillText('WEIGHTED · jump: ↑ / W / Space', W - 30, b.devHp ? sy - 24 : sy); }
+  // stat line (v2.0.4: in FULL DIAL it is drawn translucent under the bolts and the soul instead, see hhFullBox)
+  if (!hhFullBox()) hhStatLine(b);
   // buttons
   if (!b.opts.practice && arena.h < 400) for (let i = 0; i < 4; i++) { const r = btnRect(i), on = b.st === 'menu' && b.sel === i, active = b.st === 'menu' || b.st === 'list';
     ctx.globalAlpha = active ? 1 : 0.45; rrect(r.x, r.y, r.w, r.h, 8); ctx.fillStyle = on ? '#3a2a10' : '#120c1e'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = on ? '#ffd36e' : '#c8a050'; ctx.stroke();
@@ -481,6 +476,7 @@ function drawBattle() {
   if (b.st === 'broken') { ctx.fillStyle = `rgba(0,0,0,${clamp(b.brokenT / 1.6, 0, 0.85)})`; ctx.fillRect(0, 0, W, H); }
   drawPauseBtn();
   if (touch.seen && b.st === 'dodge') drawDodgeTouch();
+  if (hhFullBox() && b.st === 'dodge' && !(player.inv > 0 && Math.floor(player.inv * 16) % 2 === 0)) { const w = localToWorld(player.x, player.y); drawCore(w.x, w.y, b.t, player.blue, player.flash > 0); } /* v2.0.4: soul always on top in FULL DIAL */
 }
 function drawBtnIcon(i, x, y, col, t) {
   ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
@@ -510,6 +506,19 @@ function drawBullet(b) {
   }
   ctx.globalAlpha = 1;
 }
+/* v2.0.4 (Smith #8): the stat line (name, COIL, GLOW, dev NORMAL HP) as its own pass so FULL DIAL can draw it UNDER the bolts and the soul. */
+function hhStatLine(b) {
+  const sy = 453; ctx.font = `bold 17px ${FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#f4ecd8';
+  ctx.fillText(b.opts.practice ? 'PRACTICE' : `${hero.name}`, 40, sy); ctx.fillStyle = '#c8a050'; ctx.fillText(b.opts.practice ? '' : `COIL ${hero.coil}`, 180, sy);
+  if (!b.opts.practice) { ctx.fillStyle = '#ddd'; ctx.fillText('GLOW', 300, sy); const mg = maxGlow(hero), bw = Math.min(200, 60 + mg * 2.4), real = b.devHp ? mg : hero.glow;
+    ctx.fillStyle = '#3a1a0a'; ctx.fillRect(360, sy - 10, bw, 20); if (!b.devHp) hhGhostBar(b, mg, 360, sy - 10, bw, 20); ctx.fillStyle = b.glowFlash > 0 ? '#fff' : '#ff9a3c'; ctx.fillRect(360, sy - 10, bw * real / mg, 20); ctx.fillStyle = '#f4ecd8'; ctx.fillText(`${real} / ${mg}`, 370 + bw, sy);
+    if (b.devHp) hhDevHpBar(b, mg, sy); }
+  else { ctx.fillStyle = '#ccc'; ctx.fillText(`${b.opts.practice.name} · clears ${b.loops || 0} · hits ${b.phits || 0}`, 180, sy); }
+  if (player.blue && b.st === 'dodge') { ctx.fillStyle = '#7fb6ff'; ctx.textAlign = 'right'; ctx.font = `bold 14px ${FONT}`; ctx.fillText('WEIGHTED · jump: ↑ / W / Space', W - 30, b.devHp ? sy - 24 : sy); }
+}
+/* v2.0.4: the box is in its full-screen FULL DIAL shape. It leaves a 60 px HUD strip on top (MERIDIAN name, WIND-DOWN, attack n/16,
+   TIME clock, pause); the bottom stat line goes under the play layer, translucent; the soul is drawn again over every HUD element. */
+function hhFullBox() { return arena.h > 400; }
 function drawPauseBtn() { const pb = PAUSE_BTN; ctx.globalAlpha = 0.8; ctx.strokeStyle = '#c8a050'; ctx.lineWidth = 2; rrect(pb.x, pb.y, pb.w, pb.h, 8); ctx.stroke(); ctx.fillStyle = '#e8d8b0'; ctx.fillRect(pb.x + 15, pb.y + 13, 6, 22); ctx.fillRect(pb.x + 27, pb.y + 13, 6, 22); ctx.globalAlpha = 1; }
 function drawJoy() { if (!touch.joy) return; const j = touch.joy; ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(j.bx, j.by, JOY_R, 0, 6.283); ctx.stroke(); const dx = j.cx - j.bx, dy = j.cy - j.by, m = Math.hypot(dx, dy), k = m > JOY_R ? JOY_R / m : 1; circ(j.bx + dx * k, j.by + dy * k, 24, 'rgba(255,255,255,.45)'); }
 function drawDodgeTouch() {

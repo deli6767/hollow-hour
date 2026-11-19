@@ -22,3 +22,13 @@ function hhSting(id, p) { try { if (window.hhPhaseStinger) hhPhaseStinger(id, p)
 /* c17: Clockwork holds. These attacks took more bot hits with the +0.1 Clockwork clock than on Normal (c9 patbot, clock_*.log), so on Clockwork they keep their Normal clock (they still deal +25% damage). */
 for (const k of ['conveyor', 'rivetRain', 'highNote', 'inkLines']) if (A[k]) A[k].noClk = true;
 for (const i of [1, 3, 9, 10, 13, 14, 15]) if (MER_ATTACKS[i]) MER_ATTACKS[i].noClk = true;
+/* v2.0.4 (Smith #9: MERIDIAN must stay the hardest fight). Since v2.0.3 every boss needs 15+ max crits, so the other bosses cycle
+   their patterns three or four times and their per-fight hit totals passed MERIDIAN's (his length is fixed: 16 attacks + FULL DIAL).
+   Long-fight relief: in a real boss fight (not practice, not MERIDIAN) an attack the boss has already used this fight comes back
+   abbreviated: 60% of its length (never under 4 s). Same patterns, same speed and damage; the first time you see each one is unchanged. */
+const HH_REPEAT_DUR = 0.6;
+{ const _bd = bDodge; bDodge = function (b, def, d) {
+    if (b && def && !b.mer && !(b.opts && b.opts.practice) && BOSS_TS[b.id] && def.dur > 4) { const k = def.id || def.name; b.atkSeen = b.atkSeen || {};
+      if (b.atkSeen[k]) def = Object.assign({}, def, { dur: Math.max(4, Math.round(def.dur * HH_REPEAT_DUR * 10) / 10), repeat: b.atkSeen[k] });
+      b.atkSeen[k] = (b.atkSeen[k] || 0) + 1; }
+    return _bd.call(this, b, def, d); }; }

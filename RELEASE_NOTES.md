@@ -1,4 +1,10 @@
 # Release notes
+**Hollow Hour v2.0.4: the hardest hour**
+- FULL DIAL no longer hides you. The box now stops just under the top bar, so MERIDIAN's name, the attack counter, the clock and pause sit above the play field. Your name, COIL and GLOW fade under the action instead of covering it, and your soul is always drawn on top. Desktop and phone.
+- FULL DIAL is now a real finale. Four hours fire at a time, the bolts are quicker, the HOUR hand joins the minute hand turning the other way, and three chime rings ring out from the middle (always with a gap). It is still telegraphed and always has a way through.
+- MERIDIAN is the hardest fight again. He has a new follow-up, CHIME (rings with a gap), after TWELVE STROKES and MIDNIGHT. The attacks toned down in v2.0.3 (REWIND, DESPERATION, KEPT TIME, LITTLE HAMMER) are unchanged.
+- The other bosses take less out of you in their longer fights. When a boss repeats an attack it has already used in that fight, the repeat is shorter. The first time you see each attack is unchanged. Archivist Quill's ECHO OF RECORD fires 2 notes at a time (was 3) on a clean record and they fly a little slower.
+
 **Hollow Hour v2.0.3: the full fight**
 - Bosses last longer. Boss HP now scales with your COIL and the best weapon you carry, so every boss takes at least 15 perfect CRITICAL hits to beat, even with the strongest gear (the Bilgewater Twins take 8 each). You see every pattern and both forms. Sparing rules are unchanged: talk first, and the low-HP mercy still starts at 25% of the new HP.
 - MERIDIAN's new finale, FULL DIAL: after his last attack the box blooms out to the whole screen. His hour marks fire from the edges, a long hand sweeps the middle, and your route's final-phase layer comes along. Then the dial clears and the box shrinks back. Works with keyboard and touch.

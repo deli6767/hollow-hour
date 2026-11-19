@@ -25,9 +25,9 @@ A.redaction = { name: 'Redaction', dur: 7, size: [290, 190], desc: 'whole lines 
       for (let i = 0; i < N; i++) if (i !== safe) zone(0, -hh() + lh * (i + 0.5), arena.w + 2, lh + 1, wn, 0.25, { col: '#d8d0f0' }); }, 0.2, 6.6); } };
 // ECHO OF RECORD: your past choices are read back as slow aimed notes from the corners. 2 notes per volley at 0 kills, up to 5 at 20.
 A.recordEcho = { name: 'Echo of Record', dur: 7, size: [250, 200], desc: 'slow notes fly at you from the corners. more of them the more you have ended',
-  run(S) { const n = 3 + Math.floor(qK() / 7); S.every(0.52 / S.d, v => { const cs = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  run(S) { const n = 2 + Math.floor(qK() / 6); /* v2.0.4 (#9): 3 -> 2 notes at 0 kills (as documented), 5 at 18+ */ S.every(0.52 / S.d, v => { const cs = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
       for (let i = 0; i < n; i++) { const [cx, cy] = cs[(v + i) % 4], x = cx * (hw() - 8), y = cy * (hh() - 8), a = Math.atan2(P.y - y, P.x - x) + (i - (n - 1) / 2) * 0.2;
-        shot(x, y, Math.cos(a) * 165 * S.d, Math.sin(a) * 165 * S.d, 7, qK() ? '#c84a6a' : '#ffd36e', { warn: 0.45 }); } sfx('warn'); }, 0.2, 6.2); } };
+        shot(x, y, Math.cos(a) * 150 * S.d, Math.sin(a) * 150 * S.d, 7, qK() ? '#c84a6a' : '#ffd36e', { warn: 0.45 }); /* v2.0.4: 165 -> 150 */ } sfx('warn'); }, 0.2, 6.2); } };
 // QUILL STROKE: one pen-stroke laser at a time, from a box edge through a point near you; 0.85 s marked line, 0.3 s live.
 A.quillStroke = { name: 'Quill Stroke', dur: 7, size: [260, 220], desc: 'the pen strikes a line through the page. one stroke at a time, marked first',
   run(S) { S.every(1.0 / S.d, n => { const sx = P.x < 0 ? 1 : -1, sy = P.y < 0 ? 1 : -1, x = n % 2 ? sx * hw() : rand(-hw() + 30, hw() - 30), y = n % 2 ? rand(-hh() + 30, hh() - 30) : sy * hh(); // always from the far side, so the stroke crosses the box toward you
